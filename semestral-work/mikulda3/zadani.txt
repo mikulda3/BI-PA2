@@ -1,0 +1,76 @@
+C++Man (téma Pacman)
+=====================
+Autor: David Mikulka
+
+== Téma z Progtestu
+
+Implementujte klasickou hru Pacman proti počítači (můžete naimplementovat i jiné varianty).
+
+Hra musí splňovat následující funkcionality:
+
+1. Dodržování základních pravidel, sbírání bonusů, míncí (teček), třešniček, teleporty, atp.
+2. Je implementováno několik druhů AI duchů (fungující i zároveň - např. duchové se liší barvou, znakem).
+3. Lze načítat mapy ze souboru (bludiště + pozice bonusů a duchů).
+4. Konfigurovatelná obtížnost hry ze souboru (rychlost duchů, délka trvání jednotlivých módů hry, pravděpodobnost
+   přidání nového bonusu do mapy, ...)
+5. Škálovatelná obtížnost duchů (více strategií duchů dle obtížnost, dle různého chování)
+
+Kde lze využít polymorfismus? (doporučené)
+
+- Rozdělení hráčů: hráč, duch (různé druhy umělé inteligence)
+- Mód hry: klasický (duchové chodí dle svých strategií), zběsilý (duchové pronásledují hráče), 
+  nezranitelný (duchové jsou pomalejší, dají se zabít)
+- Herní políčko: zem, stěna, bod, bonus (změna módu), třešnička (více bodů), teleport
+- Uživatelské rozhraní: konzole, ncurses, SDL, OpenGL (různé varianty), ...
+
+== Zadání hry C++Man
+
+Hráč spustí aplikaci a zobrazí se mu hlavní menu hry. Zde může pomocí šipek a enteru vybírat z následujících možností:
+- START GAME - spustí hru (defaultně lehká obtížnost, jinak podle nastavení)
+- SETTINGS - hráč si zde může zvolit obtížnost hry a vybrat si mapu. Na výběr má ze tří obtížností a tří map
+- QUIT GAME - aplikace se ukončí
+ 
+  Po výběru tlačítka START GAME se spustí samotná hra. Ovládání je pomocí šipek, pomocí klávesy 'x' může uživatel
+ukončit hru. Cíl je jednoduchý, a to přežít co nejvíce levelů, vyhýbat se duchům, kteří ho neustále pomocí různých 
+taktik nahánějí a získat co nejvíce bodů. Aby se hráč dostal do dalšího levelu, musí posbírat všechny malé tečky na 
+mapě. Každá z nich je za 10 bodů. Každý level má také specifikované objevení bonusového ovoce. To je za 100 bodů a v
+každém levelu ho lze sebrat maximálně dvakrát. 
+  Duchové mají 3 základní režimy pohybu - Scatter, Chase a Frightened. 
+  V módu Scatter se každý duch snaží dostat do svého rohu na mapě, nejdou tedy přímo po hráči.
+  V Chase módu začíná ta pravá zábava. Každý duch má naprogramovanou unikátní techniku nahánění hráče. Blinky jde 
+přímo po hráči, Pinky míří na 4 pole před hráčem, Inky má za cíl nejbližší roh k hráči a Clyde se snaží dostat přímo
+ke hráči, pokud je 8 a více polí od něj, v opačném případě se snaží dostat do svého rohu. Na základní mapě existuje
+skryté políčko, na kterém duchové hráče nikdy nechytí, když na něj správně dojde. Tohle se děje díky tomu, že duchové
+mají danou prioritu výběru zatáčky. Pokud to lze, tak zatáčí v pořadí nahoru, doleva, dolů a doprava.
+  Poslední režim je Frightened. Ten nastává v případě, kdy hráč sebere 'O'. Hráč se tak stává nezranitelným a naopak
+duchové jsou zranitelní a hráč je může začít nahánět pro bonusové body. První duch v jedné sekvenci je za 200 bodů, 
+každý další pak za dvojnásobek předchozích bodů za ducha. Pokud je duch chycen hráčem, jeho cílem se stává políčko 
+před domečkem. Až tam dojde, tak se opět vrací do jednoho z naháněcích módů.
+  Módy Scatter a Chase mají dané trvání v závislosti na obtížnosti a střídají se. Po určité době jsou duchové až do 
+konce levelu v módu Chase.
+  Hráč má celkem 3 životy. Když ho sní duch, hráči se ubere jeden život a vrátí se na startovní pozici, duchové také 
+a resetuje se čas módů hry. Mapa zůstává stejná, tak jak byla předtím. Pokud hráč ztrátí všechny životy, hra končí.
+
+Uživatelské rozhraní:
+- Mapa a neprůchozí objekty jsou modrou barvou a mají symbol '#'.
+- C++Man je na mapě zobrazen jako žluté 'C' a sbírá body, označené jako '.', a bonusy, označené jako 'O' a '*'. 
+- Duchové jsou na mapě zobrazeni jako 'M' a liší se barvami podle druhu.
+- Skóré je umístěno v pravém horním rohu.
+- Životy jsou v levém horním rohu. 
+
+Program volá všechny své třídy z hlavního souboru main.cpp. Hlavní třídou je CApplication, která se stará o běh 
+celé aplikace a volá další třídy podle potřeby. 
+
+== Polymorfismus
+
+Polymorfismus ve svém programu využívám u třídy CGhost. Ta má potomky CBlinky, CPinky, CInky a CClyde, tedy všechny
+čtyři duchy. Rodičovská třída má několik metod, které přímo používají její potomci a dvě metody, které jsou virtuální
+a jsou implementovány unikátně u každého potomka. Virtuální metody jsou Scatter a Chase a to z toho důvodu, že každý
+duch má kompletně unikátní způsob nahánění hráče v režimu Chase. Režim Scatter se pak liší pouze v tom, do jakého 
+rohu duch míří. Rodič CGhost má pak spustu metod, které používají všichni duchové v různých fázích hry. 
+Nejdůležitější metoda je Move. Tu jednotliví duchové volají v případě, že už je nějakým způsobem známo nebo 
+vypočítáno cílové pole. Metoda Move pak zajistí správný pohyb podle pravidel výběru zatáček, které jsem již zmínil 
+nahoře a samozřejmě podle toho, kam duch může a kam nemůže jít. Duchové můžou stejně jako hráč používat teleporty a
+stejně jako hráč nemůžou chodit skrz stěny. Další metodou pro pohyb je Frightened, která je opět implementována v 
+rodičovské tříde CGhost a duchové jí dle potřeby volají. V této metodě duchové utíkají od hráče pomocí algoritmu, 
+který na každé zatáčce vybere náhodný směr.
